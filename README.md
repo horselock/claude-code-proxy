@@ -82,7 +82,4 @@ You're done!
 - Implement intelligent caching to deal with SillyTavern features
 
 ## Changelog
-- 0.0.0 - new
-- idk i missed a few
-- 0.2.0 - refactored to node and a smarter way of getting credentials. app no longer handles caching (will bring it back when I'm confident in a better design)
-- 0.3.0 - docker
+- 1.0.0 - new
