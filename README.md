@@ -51,7 +51,8 @@ You're done!
 1. Install Git for Windows and run (in command line or powershell) `git clone https://github.com/horselock/claude-code-proxy.git`. If you really really don't want git, then download and unzip the whole project.
 2. Double-click `run.bat` (Windows) or `run.sh` (Mac/Linux) - first run will auto-install dependencies
 3. Go into SillyTavern and point the Claude connection to that proxy:
-<img width="644" alt="image" src="https://github.com/user-attachments/assets/0bced4d9-bd25-4823-b47c-35a57a098137" />
+
+<img width="638" alt="image" src="https://github.com/user-attachments/assets/3b94e5c4-d52d-4ee8-8d26-675ba667f7a8" />
 
 - URL = `http://localhost:42069/v1`
 - Literally anything for password, just don't leave blank.
@@ -68,8 +69,6 @@ You're done!
 - Probably should increase Max Tokens so responses don't get cut off.
 - Try loading up Pyrite, my jailbroken persona!
   - I've pre-loaded Pyrite on the server. Just set your url to `http://localhost:42069/v1/pyrite`! This is meant for people who JUST installed a front and and don't have a real setup yet - it's nice to be able to celebrate your victory with something working right away!
-
-<img width="290" alt="image" src="https://github.com/user-attachments/assets/2794ba0d-9369-481d-9273-a5624293a6f5" />
 - Read up on how SillyTavern handles caching: https://docs.sillytavern.app/administration/config-yaml/#claude-configuration
   - It's off by default, turn it on with those configs. Choose depth 0 if you aren't sure.
   - What all those warnings mean is that for cache to be use, everything up to a certain point has to be the exact same. ST has a lot of advanced features where it makes changes to the start of the context, ruining your savings. But for simpler use cases, it's fine. Set the context to 200K IMO - because as stuff falls out of context if you choose a lower number, that also 
