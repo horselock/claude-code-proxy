@@ -1,0 +1,26 @@
+Bash curl example with all headers found in a normal claude-code request. Normally there's a ~3500 token second element in the "system" array but it's not required. This first sentence is.
+
+The only required headers are `anthropic-beta`, `anthropic-version`, and `authorization`. The `beta` queryParam is not required.
+
+curl 'https://api.anthropic.com/v1/messages?beta=true' \
+  -X POST \
+  -H 'accept: application/json' \
+  -H 'anthropic-beta: claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14' \
+  -H 'anthropic-dangerous-direct-browser-access: true' \
+  -H 'anthropic-version: 2023-06-01' \
+  -H 'authorization: Bearer sk-ant-oat01-someShit' \
+  -H 'content-type: application/json' \
+  -H 'user-agent: claude-cli/1.0.27 (external, cli)' \
+  -H 'x-app: cli' \
+  -H 'x-stainless-arch: x64' \
+  -H 'x-stainless-helper-method: stream' \
+  -H 'x-stainless-lang: js' \
+  -H 'x-stainless-os: Linux' \
+  -H 'x-stainless-package-version: 0.51.0' \
+  -H 'x-stainless-retry-count: 0' \
+  -H 'x-stainless-runtime: node' \
+  -H 'x-stainless-runtime-version: v20.18.2' \
+  -H 'x-stainless-timeout: 60' \
+  --data @- <<'EOF'
+{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":[{"type":"text","text":"testing"}]}],"temperature":1,"max_tokens":32000,"system":[{"type":"text","text":"You are Claude Code, Anthropic's official CLI for Claude.","cache_control":{"type":"ephemeral"}}]}
+EOF
