@@ -80,5 +80,3 @@ You're done!
 ## Todo
 - Implement intelligent caching to deal with SillyTavern features
 
-## Changelog
-- 1.0.0 - new
