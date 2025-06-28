@@ -1,0 +1,18 @@
+# Node.js dependencies
+server/node_modules/
+server/package-lock.json
+
+# No token cache needed - reading directly from credentials
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

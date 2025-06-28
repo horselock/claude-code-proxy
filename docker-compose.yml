@@ -1,0 +1,14 @@
+services:
+  claude-proxy:
+    image: node:22-alpine
+    working_dir: /app
+    command: node server/server.js
+    ports:
+      - "42069:42069"
+    volumes:
+      - ~/.claude:/root/.claude
+      - ${CLAUDE_PATH}:/usr/local/bin/claude
+      - ./server:/app/server
+      - ./util:/app/util
+    environment:
+      - PATH=/usr/local/bin:/usr/bin:/bin
