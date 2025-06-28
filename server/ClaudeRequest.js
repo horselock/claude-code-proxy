@@ -269,7 +269,11 @@ class ClaudeRequest {
         resolve(res);
       });
 
-      req.on('error', reject);
+      req.on('error', (err) => {
+        req.destroy();
+        reject(err);
+      });
+      
       req.write(JSON.stringify(processedBody));
       req.end();
     });
@@ -342,6 +346,34 @@ class ClaudeRequest {
     if (contentType.includes('text/event-stream')) {
       Logger.debug('Outgoing response headers to client:', JSON.stringify(res.getHeaders(), null, 2));
       const debugStream = Logger.createDebugStream('Claude SSE', extractClaudeText);
+      
+      claudeResponse.on('error', (err) => {
+        Logger.debug('Claude response stream error:', err);
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+        }
+        if (!res.destroyed) {
+          res.end(JSON.stringify({ error: 'Upstream response error' }));
+        }
+      });
+      
+      debugStream.on('error', (err) => {
+        Logger.debug('Debug stream error:', err);
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+        }
+        if (!res.destroyed) {
+          res.end(JSON.stringify({ error: 'Stream processing error' }));
+        }
+      });
+      
+      res.on('close', () => {
+        Logger.debug('Client disconnected, cleaning up streams');
+        if (!claudeResponse.destroyed) {
+          claudeResponse.destroy();
+        }
+      });
+      
       claudeResponse.pipe(debugStream).pipe(res);
       debugStream.on('end', () => {
         process.stdout.write('\n');
