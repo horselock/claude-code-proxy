@@ -29,7 +29,7 @@ This guide assumes windows (untested on Linux/Mac but should work fine, and if y
 
 ### Install Claude Code (If you didn't install with `nvm`, you may have to redo - it's better anyway)
 #### wsl
-1. Open a command line and run `wsl --install`. Follow instructions. If you aren't already in by the end, `wsl` (either in command line or from start menu) to enter the shell, you should get colors and a dollar sign and shit:
+1. Open a command line and run `wsl --install`. Follow instructions. If you aren't already in by the end, `wsl` (either in command line or from start menu) to enter the shell, you should get colors and a dollar sign: [example](https://www.jeremymorgan.com/images/customize-wsl-terminal/customize-wsl-terminal-01.jpg)
 <img width="216" alt="image" src="https://github.com/user-attachments/assets/f100bbf6-045a-4cd5-8048-fce7c52b1ab9" />
 
 #### nvm
