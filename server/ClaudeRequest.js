@@ -114,7 +114,17 @@ class ClaudeRequest {
 
   async refreshTokenWithClaude() {
     return new Promise((resolve, reject) => {
-      const claude = spawn('claude', ['-p', 'Hi.', '--system-prompt', 'This is a test, respond in one word.'], {
+      let command, args;
+      
+      if (process.platform === 'win32') {
+        command = 'wsl';
+        args = ['-i', 'claude', '-p', 'Hi.', '--system-prompt', 'This is a test, respond in one word.'];
+      } else {
+        command = 'claude';
+        args = ['-p', 'Hi.', '--system-prompt', 'This is a test, respond in one word.'];
+      }
+      
+      const claude = spawn(command, args, {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
