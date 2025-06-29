@@ -4,7 +4,7 @@ Mostly vibe coded, don't @ me
 
 Basically we can borrow Claude Code subscription authentication to make normal API calls at will, using claude.ai limit rather than API prices.
 
-There is no safety injection (that I've noticed so far) and it gives us full control of the entire input, minus a tiny required sentence about being Claude Code in the system prompt (check
+There seems to be no safety injection and it gives us full control of the entire input, minus a tiny required sentence about being Claude Code in the system prompt (check What This Does section)
 
 ## Quick Start
 Requires: 
