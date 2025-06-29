@@ -8,8 +8,7 @@ There seems to be no safety injection and it gives us full control of the entire
 
 ## Quick Start
 Requires: 
-- nvm, node
-- Claude Code installed with nvm, login with "Claude account with subscription"
+- nvm, node (installed with nvm), Claude Code, logged in with "Claude account with subscription"
 1. `git clone https://github.com/horselock/claude-code-proxy.git`
 2. `run.sh` or `run.bat` depending on your OS; default port is 42069
 
