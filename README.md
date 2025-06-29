@@ -14,9 +14,7 @@ Requires:
 2. `run.sh` or `run.bat` depending on your OS; default port is 42069
 
 - This is NOT an OpenAI compatible proxy - it accepts Anthropic's API structure
-
 - Only exact dated model names of Sonnet 4, 3.7, 3.6, and Haiku 3.5 are allowed. Opus is allowed if you have Max.
-
 - Make sure you understand your front end's caching
 
 ### Alt Docker steps
