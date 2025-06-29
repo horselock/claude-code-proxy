@@ -25,7 +25,7 @@ As you can see by the Quick Start, like 95% of the setup is making sure you have
 
 This guide assumes windows (untested on Linux/Mac but should work fine, and if you're on Linux you probably don't need my help), and no wsl/nvm/node already installed. Just skip any sections you already have done.
 
-### Install Claude Code (If you didn't install wsl node with `nvm`, redo - it's better anyway - ask Claude to guide you if you aren't sure)
+### Install Claude Code (If you didn't install node in wsl with nvm, redo - it's better anyway. Note you could already have two separate node installs, one in native Windows and one in wsl - ask Claude to guide you if you aren't sure)
 #### wsl
 1. Open a command line and run `wsl --install`. Follow instructions. If you aren't already in by the end, `wsl` (either in command line or from start menu) to enter the shell, you should get colors and a dollar sign: [example](https://www.jeremymorgan.com/images/customize-wsl-terminal/customize-wsl-terminal-01.jpg)
 
