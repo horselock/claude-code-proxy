@@ -48,7 +48,7 @@ You're done!
 
 ### My Application
 1. Install Git for Windows and run (in command line or powershell) `git clone https://github.com/horselock/claude-code-proxy.git`. If you really really don't want git, then download and unzip the whole project.
-2. Double-click `run.bat` (Windows) or `run.sh` (Mac/Linux) - first run will auto-install dependencies
+2. Double-click `run.bat` (Windows) or `run.sh` (Mac/Linux)
 3. Go into SillyTavern and point the Claude connection to that proxy:
 
 <img width="638" alt="image" src="https://github.com/user-attachments/assets/3b94e5c4-d52d-4ee8-8d26-675ba667f7a8" />
