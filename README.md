@@ -6,6 +6,8 @@ Basically we can borrow Claude Code subscription authentication to make normal A
 
 There seems to be no safety injection and it gives us full control of the entire input, minus a tiny required sentence about being Claude Code in the system prompt (check What This Does section)
 
+And it may not necessarily be against ToS: https://github.com/grll/claude-code-action/issues/6#issue-3103072456
+
 ## Quick Start
 Requires: 
 - nvm, node (installed with nvm), Claude Code, logged in with "Claude account with subscription"
