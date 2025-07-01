@@ -26,6 +26,12 @@ class Logger {
     console.log('INFO:', ...args);
   }
 
+  static warn(...args) {
+    if (this.getLogLevel() >= 1) {
+      console.log('WARN:', ...args);
+    }
+  }
+
   static error(...args) {
     console.error('ERROR:', ...args);
   }

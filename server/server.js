@@ -7,6 +7,7 @@ const Logger = require('./Logger');
 
 let config = {};
 let claudeRequest;
+
 function loadConfig() {
   try {
     const configPath = path.join(__dirname, 'config.txt');
@@ -32,84 +33,122 @@ function loadConfig() {
   }
 }
 
+function getClientIP(req) {
+  return req.headers['x-forwarded-for'] || 
+         req.headers['x-real-ip'] || 
+         req.socket.remoteAddress || 
+         '127.0.0.1';
+}
+
+function setCORSHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+function createTimeout(callback, errorMessage, timeoutMs = 10000) {
+  let isResolved = false;
+  const timeout = setTimeout(() => {
+    if (!isResolved) {
+      isResolved = true;
+      callback(new Error(errorMessage));
+    }
+  }, timeoutMs);
+  
+  return {
+    clear: () => {
+      if (!isResolved) {
+        isResolved = true;
+        clearTimeout(timeout);
+      }
+    },
+    isResolved: () => isResolved
+  };
+}
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
+    
+    const timeoutHandler = createTimeout(reject, 'Request body parsing timed out after 10000ms');
+    
+    req.on('data', chunk => body += chunk.toString());
     req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(new Error(`Invalid JSON: ${error.message}`));
+      if (!timeoutHandler.isResolved()) {
+        timeoutHandler.clear();
+        try {
+          resolve(body ? JSON.parse(body) : {});
+        } catch (err) {
+          reject(err);
+        }
       }
     });
-    req.on('error', reject);
+    req.on('error', (err) => {
+      if (!timeoutHandler.isResolved()) {
+        timeoutHandler.clear();
+        reject(err);
+      }
+    });
   });
 }
 
-function getClientIP(req) {
-  return req.headers['x-forwarded-for'] || 
-         req.headers['x-real-ip'] || 
-         req.connection.remoteAddress || 
-         '127.0.0.1';
-}
-
-async function handleRequest(req, res) {
-  const clientIP = getClientIP(req);
-  const { pathname } = url.parse(req.url);
-  
-  console.log(`${req.method} ${pathname} from ${clientIP}`);
-  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
-  
-  if (pathname === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', server: 'claude-code-proxy', timestamp: Date.now() }));
-    return;
-  }
-  
-  if (req.method === 'POST' && (pathname === '/v1/messages' || pathname.match(/^\/v1\/\w+\/messages$/))) {
-    try {
-      Logger.debug('Incoming request headers:', JSON.stringify(req.headers, null, 2));
-      const body = await parseBody(req);
-      Logger.debug(`Claude request body (${JSON.stringify(body).length} bytes):`, JSON.stringify(body, null, 2));
-      
-      let presetName = null;
-      const presetMatch = pathname.match(/^\/v1\/(\w+)\/messages$/);
-      if (presetMatch) {
-        presetName = presetMatch[1];
-        Logger.debug(`Detected preset: ${presetName}`);
-      }
-      
-      await claudeRequest.handleResponse(res, body, presetName);
-    } catch (error) {
-      console.error('Request error:', error.message);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: error.message }));
-    }
-    return;
-  }
-  
-  
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not found' }));
-}
-
-function startServer() {
+async function startServer() {
   loadConfig();
   
-  const server = http.createServer(handleRequest);
+  const server = http.createServer(async (req, res) => {
+    const clientIP = getClientIP(req);
+    const parsedUrl = url.parse(req.url, true);
+    console.log(`${req.method} ${req.url} from ${clientIP}`);
+    
+    setCORSHeaders(res);
+    
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+    
+    if (req.method === 'GET' && parsedUrl.pathname === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', server: 'claude-code-proxy', timestamp: Date.now() }));
+      return;
+    }
+    
+    if (req.method === 'POST' && parsedUrl.pathname === '/v1/messages') {
+      try {
+        const body = await parseBody(req);
+        Logger.debug('Incoming request headers:', JSON.stringify(req.headers, null, 2));
+        Logger.debug(`Claude request body (${JSON.stringify(body).length} bytes):`, JSON.stringify(body, null, 2));
+        
+        await claudeRequest.handleResponse(res, body);
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+      return;
+    }
+    
+    const presetMatch = parsedUrl.pathname.match(/^\/v1\/([^\/]+)\/messages$/);
+    if (req.method === 'POST' && presetMatch) {
+      try {
+        const presetName = presetMatch[1];
+        const body = await parseBody(req);
+        Logger.debug(`Detected preset: ${presetName}`);
+        Logger.debug('Incoming request headers:', JSON.stringify(req.headers, null, 2));
+        Logger.debug(`Claude request body (${JSON.stringify(body).length} bytes):`, JSON.stringify(body, null, 2));
+        
+        await claudeRequest.handleResponse(res, body, presetName);
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+      return;
+    }
+    
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+  });
+
   const port = parseInt(config.port) || 3000;
   const host = config.host || 'localhost';
   
@@ -117,14 +156,17 @@ function startServer() {
     console.log(`claude-code-proxy server listening on ${host}:${port}`);
   });
   
-  process.on('SIGTERM', () => {
-    console.log('Shutting down...');
-    server.close(() => process.exit(0));
+  server.on('error', (err) => {
+    console.error('Failed to start server:', err.message);
+    process.exit(1);
   });
-  
-  process.on('SIGINT', () => {
-    console.log('Shutting down...');
-    server.close(() => process.exit(0));
+
+  process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully...');
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
   });
 }
 

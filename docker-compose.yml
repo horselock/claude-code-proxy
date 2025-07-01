@@ -2,12 +2,13 @@ services:
   claude-proxy:
     image: node:22-alpine
     working_dir: /app
-    command: node server/server.js
+    command: sh run.sh
     ports:
       - "42069:42069"
     volumes:
       - ~/.claude:/root/.claude
       - ${CLAUDE_PATH}:/usr/local/bin/claude
+      - ./run.sh:/app/run.sh
       - ./server:/app/server
       - ./util:/app/util
     environment:
