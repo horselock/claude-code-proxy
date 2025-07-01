@@ -8,7 +8,7 @@ Basically we can borrow Claude Code subscription authentication to make normal A
 
 There seems to be no safety injection and it gives us full control of the entire input, minus a tiny required sentence about being Claude Code in the system prompt (check What This Does section)
 
-And it may not necessarily even be against ToS: https://github.com/grll/claude-code-action/issues/6#issue-3103072456
+And it may not necessarily even be against ToS! https://github.com/grll/claude-code-action/issues/6#issue-3103072456
 
 ## Quick Start
 Requires: 
@@ -16,23 +16,28 @@ Requires:
 1. `git clone https://github.com/horselock/claude-code-proxy.git`
 2. `run.sh` or `run.bat` depending on your OS; default port is 42069
 
-- This is NOT an OpenAI compatible proxy - it accepts Anthropic's API structure
-- Only exact dated model names of Sonnet 4, 3.7, 3.6, and Haiku 3.5 are allowed. Opus is allowed if you have Max.
-- Make sure you understand your front end's caching
+- NOT an OpenAI compatible proxy, uses Anthropic's schema 
+- Only exact dated model names of Sonnet 4, 3.7, 3.6, and Haiku 3.5 are allowed. Opus 4 too with Max.
+- Understand your front end's caching, some disabled by default, complex setups may have pitfalls.
 
-### Alt Docker steps
-1. `CLAUDE_PATH=$(which claude) docker-compose up` (windows must enter this from wsl, with docker open obviously)
+### Alternate Docker steps
+1. `docker-compose up` (Windows must enter this from wsl, with docker open obviously)
 
-## Beginner Guide
+## Beginner/Thorough Guide
 As you can see by the Quick Start, like 95% of the setup is making sure you have Claude Code and your local front end are set up right. This utility's setup by itself is pretty much "run the server and point your front end at it." 
 
 This guide assumes windows (untested on Linux/Mac but should work fine, and if you're on Linux you probably don't need my help), and no wsl/nvm/node already installed. Just skip any sections you already have done.
 
-### Install Claude Code (If you didn't install node in wsl with nvm, remove it and reinstall - it's better anyway. Note you could already have two separate node installs, one in native Windows and one in wsl - ask Claude to guide you on removal if you aren't sure)
+### Install Claude Code 
+
 #### wsl
+If you already have wsl, make sure it's not defaulted to something weird. In cmd, enter `wsl -l -v` to check. If it's set to docker-desktop or something, do `wsl --set-default Ubuntu` (it's usually Ubuntu, replace with whatever)
+
 1. Open a command line and run `wsl --install`. Follow instructions. If you aren't already in by the end, `wsl` (either in command line or from start menu) to enter the shell, you should get colors and a dollar sign: [example](https://www.jeremymorgan.com/images/customize-wsl-terminal/customize-wsl-terminal-01.jpg)
 
-#### nvm
+#### nvm/node
+Even if you already have node in Windows, you'll need it again in wsl. If you already installed it NOT with nvm (Node Version Manager), remove it (ask Claude to guide if unsure) and reinstall - it's better anyway.
+
 1. While in wsl, install nvm t: `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash` - See [their guide](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script) for latest version.
 2. Still in the colorful wsl terminal, install node: `nvm install --lts` - LTS stands for long term support
 
