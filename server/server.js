@@ -6,7 +6,6 @@ const ClaudeRequest = require('./ClaudeRequest');
 const Logger = require('./Logger');
 
 let config = {};
-let claudeRequest;
 function loadConfig() {
   try {
     const configPath = path.join(__dirname, 'config.txt');
@@ -23,7 +22,6 @@ function loadConfig() {
     });
     
     Logger.init(config);
-    claudeRequest = new ClaudeRequest(config);
     
     console.log('Config loaded from config.txt');
   } catch (error) {
@@ -92,7 +90,7 @@ async function handleRequest(req, res) {
         Logger.debug(`Detected preset: ${presetName}`);
       }
       
-      await claudeRequest.handleResponse(res, body, presetName);
+      await new ClaudeRequest(req).handleResponse(res, body, presetName);
     } catch (error) {
       console.error('Request error:', error.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });

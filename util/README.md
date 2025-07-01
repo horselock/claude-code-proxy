@@ -2,7 +2,7 @@
 Some of these may have been used as backup options for the app but may not necessarily still be. Leaving them up because they are useful.
 
 ### claude-bearer.js
-claude-bearer.js sends a test message through claude code and grabs the Authorization header from the last successful response it sees. If on windows, run it in wsl using `node claude-bearer.js`. May be found in:
+claude-bearer.js sends a test message through claude code and grabs the Authorization header from the last successful response it sees. If on Windows, run it in wsl using `node claude-bearer.js`. May be found in:
 - ~/.claude/.credentials.json
 
 ### gemini-bearer.js
