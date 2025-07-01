@@ -31,11 +31,9 @@ This guide assumes windows (untested on Linux/Mac but should work fine, and if y
 ### Install Claude Code 
 
 #### wsl
-If you already have wsl, make sure it's not defaulted to something weird. In cmd, enter `wsl -l -v` to check. If it's set to docker-desktop or something, do `wsl --set-default Ubuntu` (it's usually Ubuntu, replace with whatever)
-
 1. Open a command line and run `wsl --install`. Follow instructions. If you aren't already in by the end, `wsl` (either in command line or from start menu) to enter the shell, you should get colors and a dollar sign: [example](https://www.jeremymorgan.com/images/customize-wsl-terminal/customize-wsl-terminal-01.jpg)
 
-#### nvm/node
+#### nvm and node
 Even if you already have node in Windows, you'll need it again in wsl. If you already installed it NOT with nvm (Node Version Manager), remove it (ask Claude to guide if unsure) and reinstall - it's better anyway.
 
 1. While in wsl, install nvm t: `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash` - See [their guide](https://github.com/nvm-sh/nvm?tab=readme-ov-file#install--update-script) for latest version.
@@ -60,7 +58,7 @@ You're done!
 <img width="638" alt="image" src="https://github.com/user-attachments/assets/3b94e5c4-d52d-4ee8-8d26-675ba667f7a8" />
 
 - URL = `http://localhost:42069/v1`
-- Literally anything for password, just don't leave blank.
+- Literally anything for password, just don't leave blank. As a backup option, you may put your oauth access token here (see Troubleshooting section)
 - You have to pick a specific name for the model, can't pick "latest". Have to have a date at the end. Only Sonnet (20241022 or later) and 3.5 Haiku are allowed plus Opus with Max. 
 - Save the preset as "Claude Code Proxy" or whatever you want.
 - Click "Connect"
@@ -77,6 +75,12 @@ You're done!
 - Read up on how SillyTavern handles caching: https://docs.sillytavern.app/administration/config-yaml/#claude-configuration
   - It's off by default, turn it on with those configs. Choose depth 0 if you aren't sure.
   - What all those warnings mean is that for cache to be use, everything up to a certain point has to be the exact same. ST has a lot of advanced features where it makes changes to the start of the context, ruining your savings. But for simpler use cases, it's fine. Set the context to 200K IMO - because as stuff falls out of context if you choose a lower number, that also 
+
+### Troubleshooting
+Most likely thing to go wrong is not being able to find the credentials, either due to permissions or location.
+- Ensure you installed node in wsl with nvm, if not, just redo it.
+- Make sure your wsl default is Ubuntu (the default distro that comes with wsl)
+- If all else fails, go to wsl, `cat ~/.claude/.credentials.json`, copy out the access token, and put it in the authentication header.
 
 ## What This Does
 - Adds headers (Authorization plus a couple specified in config.txt) to trick the endpoint into thinking the request is coming from a real Claude Code application.
