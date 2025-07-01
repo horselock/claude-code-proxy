@@ -1,5 +1,7 @@
 # claude-code-proxy
 ## About
+### Token refresh broke right now, just open claude code if auth fails
+
 Mostly vibe coded, don't @ me
 
 Basically we can borrow Claude Code subscription authentication to make normal API calls at will, using claude.ai limit rather than API prices.
