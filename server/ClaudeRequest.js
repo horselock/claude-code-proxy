@@ -2,21 +2,32 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { spawn, execSync } = require('child_process');
+const { execSync } = require('child_process');
 const Logger = require('./Logger');
 
+const STRIP_TTL = true;
+
 class ClaudeRequest {
-  constructor(config) {
-    this.config = config;
+  static cachedToken = null;
+  static presetCache = new Map();
+  static refreshPromise = null;
+
+  constructor(req = null) {
     this.API_URL = 'https://api.anthropic.com/v1/messages';
     this.VERSION = '2023-06-01';
-    this.BETA_HEADER = config.beta_header || '';
-    this.currentToken = null;
-    this.presetCache = new Map();
+    this.BETA_HEADER = 'claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14';
+    
+    // Check for x-api-key header first
+    const apiKey = req?.headers?.['x-api-key'];
+    if (apiKey && apiKey.startsWith('Bearer ')) {
+      this.currentToken = apiKey;
+    } else {
+      this.currentToken = ClaudeRequest.cachedToken;
+    }
   }
 
   stripTtlFromCacheControl(body) {
-    if (!this.config.strip_ttl) return body;
+    if (!STRIP_TTL) return body;
     if (!body || typeof body !== 'object') return body;
 
     const processContentArray = (contentArray) => {
@@ -52,42 +63,48 @@ class ClaudeRequest {
       return this.currentToken;
     }
 
-    return await this.loadOrRefreshToken();
+    const token = await this.loadOrRefreshToken();
+    ClaudeRequest.cachedToken = token;
+    this.currentToken = token;
+    return token;
   }
 
   async loadOrRefreshToken() {
     try {
-      const token = this.loadTokenFromCredentials();
+      const token = await this.loadTokenFromCredentials();
       if (token) {
         this.currentToken = token;
         return token;
       }
     } catch (error) {
-      console.log('No valid token in credentials, trying claude command...');
-    }
-
-    try {
-      const token = await this.refreshTokenWithClaude();
-      this.currentToken = token;
-      return token;
-    } catch (error) {
       throw new Error(`Failed to get auth token: ${error.message}`);
     }
   }
 
-  loadTokenFromCredentials() {
+  loadCredentialsFromFile() {
+    if (process.platform === 'win32') {
+      return execSync('wsl cat ~/.claude/.credentials.json', { 
+        encoding: 'utf8', 
+        timeout: 10000 
+      });
+    } else {
+      const credentialsPath = path.join(os.homedir(), '.claude', '.credentials.json');
+      return fs.readFileSync(credentialsPath, 'utf8');
+    }
+  }
+
+  writeCredentialsToFile(credentialsJson) {
+    if (process.platform === 'win32') {
+      execSync(`wsl tee ~/.claude/.credentials.json > /dev/null`, { input: credentialsJson, encoding: 'utf8', timeout: 10000 });
+    } else {
+      const credentialsPath = path.join(os.homedir(), '.claude', '.credentials.json');
+      fs.writeFileSync(credentialsPath, credentialsJson, 'utf8');
+    }
+  }
+
+  async loadTokenFromCredentials() {
     try {
-      let credentialsPath, credentialsData;
-      
-      if (process.platform === 'win32') {
-        credentialsData = execSync('wsl cat ~/.claude/.credentials.json', { 
-          encoding: 'utf8', 
-          timeout: 10000 
-        });
-      } else {
-        credentialsPath = path.join(os.homedir(), '.claude', '.credentials.json');
-        credentialsData = fs.readFileSync(credentialsPath, 'utf8');
-      }
+      const credentialsData = this.loadCredentialsFromFile();
 
       const credentials = JSON.parse(credentialsData);
       
@@ -97,8 +114,9 @@ class ClaudeRequest {
 
       const oauth = credentials.claudeAiOauth;
       
-      if (oauth.expiresAt && Date.now() >= oauth.expiresAt) {
-        throw new Error('Token expired');
+      if (oauth.expiresAt && Date.now() >= (oauth.expiresAt - 10000)) {
+        console.log('Token expires soon, preemptively refreshing...');
+        return await this.refreshTokenWithClaudeCode();
       }
 
       const token = oauth.accessToken.startsWith('Bearer ') 
@@ -112,55 +130,111 @@ class ClaudeRequest {
     }
   }
 
-  async refreshTokenWithClaude() {
-    return new Promise((resolve, reject) => {
-      let command, args;
+  async refreshTokenWithClaudeCode() {
+    // Race condition protection
+    if (ClaudeRequest.refreshPromise) {
+      return await ClaudeRequest.refreshPromise;
+    }
+    
+    ClaudeRequest.refreshPromise = this._doRefresh();
+    try {
+      const result = await ClaudeRequest.refreshPromise;
+      return result;
+    } finally {
+      ClaudeRequest.refreshPromise = null;
+    }
+  }
+
+  async _doRefresh() {
+    try {
+      console.log('Attempting to refresh token...');
       
-      if (process.platform === 'win32') {
-        command = 'wsl';
-        args = ['-i', 'claude', '-p', 'Hi.', '--system-prompt', 'This is a test, respond in one word.'];
-      } else {
-        command = 'claude';
-        args = ['-p', 'Hi.', '--system-prompt', 'This is a test, respond in one word.'];
+      // Load current credentials to get refresh token
+      const credentialsData = this.loadCredentialsFromFile();
+
+      const credentials = JSON.parse(credentialsData);
+      const refreshToken = credentials.claudeAiOauth?.refreshToken;
+      
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
       }
-      
-      const claude = spawn(command, args, {
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
 
-      let stdout = '';
-      let stderr = '';
+      // Make refresh request to Anthropic OAuth endpoint
+      const refreshData = {
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: '9d1c250a-e61b-44d9-88ed-5944d1962f5e'
+      };
 
-      claude.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      claude.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      claude.on('close', (code) => {
-        if (code === 0) {
-          try {
-            const token = this.loadTokenFromCredentials();
-            if (token) {
-              console.log('Successfully refreshed token via claude command');
-              resolve(token);
-            } else {
-              reject(new Error('No valid token found after claude command'));
-            }
-          } catch (error) {
-            reject(new Error(`Failed to read credentials after claude command: ${error.message}`));
-          }
-        } else {
-          reject(new Error(`Claude command failed (code ${code}): ${stderr}`));
+      const options = {
+        hostname: 'console.anthropic.com',
+        port: 443,
+        path: '/v1/oauth/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': 'claude-code-proxy/1.0.0'
         }
-      });
+      };
 
-      claude.on('error', (error) => {
-        reject(new Error(`Failed to run claude command: ${error.message}`));
+      const response = await new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          let responseData = '';
+          res.on('data', chunk => responseData += chunk);
+          res.on('end', () => {
+            try {
+              const response = JSON.parse(responseData);
+              if (res.statusCode === 200) {
+                resolve(response);
+              } else {
+                reject(new Error(`OAuth request failed: ${response.error || responseData}`));
+              }
+            } catch (error) {
+              reject(new Error(`Invalid JSON response: ${responseData}`));
+            }
+          });
+        });
+
+        // Request timeout
+        req.setTimeout(10000, () => {
+          req.destroy();
+          reject(new Error('OAuth request timeout'));
+        });
+
+        req.on('error', reject);
+        req.write(JSON.stringify(refreshData));
+        req.end();
       });
-    });
+      
+      // Update credentials file atomically
+      credentials.claudeAiOauth.accessToken = response.access_token;
+      credentials.claudeAiOauth.refreshToken = response.refresh_token;
+      credentials.claudeAiOauth.expiresAt = Date.now() + (response.expires_in * 1000);
+      
+      const credentialsJson = JSON.stringify(credentials);
+      this.writeCredentialsToFile(credentialsJson);
+      
+      console.log('Token refreshed successfully');
+      return `Bearer ${response.access_token}`;
+      
+    } catch (error) {
+      // Better error context
+      if (error.code === 'ENOENT') {
+        const errorMsg = process.platform === 'win32' 
+          ? 'Failed to load credentials: Claude credentials file not found in WSL. Check your default WSL distro with "wsl -l -v" and set the correct one with "wsl --set-default <distro-name>". As a backup, you can get the token from ~/.claude/.credentials.json and pass it as x-api-key (proxy password in SillyTavern)'
+          : 'Claude credentials not found. Please ensure Claude Code is installed and you have logged in. As a backup, you can get the token from ~/.claude/.credentials.json and pass it as x-api-key (proxy password in SillyTavern)';
+        console.error('ENOENT error during token refresh:', errorMsg);
+        throw new Error(errorMsg);
+      }
+      if (error.message.includes('invalid_grant')) {
+        throw new Error('Refresh token expired. Please log in again through Claude Code');
+      }
+      if (error.message.includes('timeout')) {
+        throw new Error('Token refresh timeout. Please check your internet connection');
+      }
+      throw new Error(`Token refresh failed: ${error.message}`);
+    }
   }
 
   getHeaders(token) {
@@ -207,19 +281,19 @@ class ClaudeRequest {
   }
 
   loadPreset(presetName) {
-    if (this.presetCache.has(presetName)) {
-      return this.presetCache.get(presetName);
+    if (ClaudeRequest.presetCache.has(presetName)) {
+      return ClaudeRequest.presetCache.get(presetName);
     }
 
     try {
       const presetPath = path.join(__dirname, 'presets', `${presetName}.json`);
       const presetData = fs.readFileSync(presetPath, 'utf8');
       const preset = JSON.parse(presetData);
-      this.presetCache.set(presetName, preset);
+      ClaudeRequest.presetCache.set(presetName, preset);
       return preset;
     } catch (error) {
       console.log(`Failed to load preset ${presetName}: ${error.message}`);
-      this.presetCache.set(presetName, null);
+      ClaudeRequest.presetCache.set(presetName, null);
       return null;
     }
   }
@@ -296,10 +370,13 @@ class ClaudeRequest {
       // Handle 401 by checking for refreshed credentials and retrying once
       if (claudeResponse.statusCode === 401) {
         console.log('Got 401, clearing token and checking for refresh...');
+        ClaudeRequest.cachedToken = null;
         this.currentToken = null;
         
         try {
-          await this.loadOrRefreshToken();
+          const newToken = await this.refreshTokenWithClaudeCode();
+          this.currentToken = newToken;
+          ClaudeRequest.cachedToken = newToken;
           const retryResponse = await this.makeRequest(body, presetName);
           res.statusCode = retryResponse.statusCode;
           Logger.debug(`Claude API retry status: ${retryResponse.statusCode}`);
@@ -355,7 +432,6 @@ class ClaudeRequest {
     const contentType = claudeResponse.headers['content-type'] || '';
     if (contentType.includes('text/event-stream')) {
       Logger.debug('Outgoing response headers to client:', JSON.stringify(res.getHeaders(), null, 2));
-      const debugStream = Logger.createDebugStream('Claude SSE', extractClaudeText);
       
       claudeResponse.on('error', (err) => {
         Logger.debug('Claude response stream error:', err);
@@ -367,16 +443,6 @@ class ClaudeRequest {
         }
       });
       
-      debugStream.on('error', (err) => {
-        Logger.debug('Debug stream error:', err);
-        if (!res.headersSent) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-        }
-        if (!res.destroyed) {
-          res.end(JSON.stringify({ error: 'Stream processing error' }));
-        }
-      });
-      
       res.on('close', () => {
         Logger.debug('Client disconnected, cleaning up streams');
         if (!claudeResponse.destroyed) {
@@ -384,11 +450,32 @@ class ClaudeRequest {
         }
       });
       
-      claudeResponse.pipe(debugStream).pipe(res);
-      debugStream.on('end', () => {
-        process.stdout.write('\n');
-        Logger.debug('Streaming response sent back to client');
-      });
+      if (Logger.getLogLevel() >= 3) {
+        // Only use debug stream if we're actually logging debug level
+        const debugStream = Logger.createDebugStream('Claude SSE', extractClaudeText);
+        
+        debugStream.on('error', (err) => {
+          Logger.debug('Debug stream error:', err);
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+          }
+          if (!res.destroyed) {
+            res.end(JSON.stringify({ error: 'Stream processing error' }));
+          }
+        });
+        
+        claudeResponse.pipe(debugStream).pipe(res);
+        debugStream.on('end', () => {
+          Logger.debug('\n');
+          Logger.debug('Streaming response sent back to client');
+        });
+      } else {
+        // Direct pipe when not debugging
+        claudeResponse.pipe(res);
+        claudeResponse.on('end', () => {
+          Logger.debug('Streaming response sent back to client');
+        });
+      }
     } else {
       res.removeHeader('content-encoding');
       
