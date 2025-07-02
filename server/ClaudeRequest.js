@@ -6,6 +6,7 @@ const { execSync } = require('child_process');
 const Logger = require('./Logger');
 
 const STRIP_TTL = true;
+const TOKEN_REFRESH_METHOD = 'OAUTH'; // 'OAUTH' or 'CLAUDE_CODE_CLI'
 
 class ClaudeRequest {
   static cachedToken = null;
@@ -23,6 +24,8 @@ class ClaudeRequest {
       const token = apiKey.startsWith('Bearer ') ? apiKey : `Bearer ${apiKey}`;
       ClaudeRequest.cachedToken = token;
     }
+
+    this.refreshToken = TOKEN_REFRESH_METHOD === 'OAUTH' ? this.refreshTokenWithOauth : this.refreshTokenWithClaudeCodeCli;
   }
 
   stripTtlFromCacheControl(body) {
@@ -75,7 +78,7 @@ class ClaudeRequest {
       
       if (oauth.expiresAt && Date.now() >= (oauth.expiresAt - 10000)) {
         Logger.info('Token expired/expiring, refreshing...');
-        return await this.refreshTokenWithClaudeCode();
+        return await this.refreshToken();
       }
 
       return `Bearer ${oauth.accessToken}`;
@@ -95,7 +98,7 @@ class ClaudeRequest {
 
   writeCredentialsToFile(credentialsJson) {
     if (process.platform === 'win32') {
-      execSync(`wsl tee ~/.claude/.credentials.json > /dev/null`, { input: credentialsJson, encoding: 'utf8', timeout: 10000 });
+      execSync(`wsl tee ~/.claude/.credentials.json`, { input: credentialsJson, encoding: 'utf8', timeout: 10000 });
     } else {
       const credentialsPath = path.join(os.homedir(), '.claude', '.credentials.json');
       fs.writeFileSync(credentialsPath, credentialsJson, 'utf8');
@@ -103,7 +106,7 @@ class ClaudeRequest {
   }
 
 
-  async refreshTokenWithClaudeCode() {
+  async refreshTokenWithOauth() {
     // Race condition protection
     if (ClaudeRequest.refreshPromise) {
       return await ClaudeRequest.refreshPromise;
@@ -120,14 +123,9 @@ class ClaudeRequest {
 
   async _doRefresh() {
     try {
-      Logger.info('Attempting to refresh token...');
       const credentialsData = this.loadCredentialsFromFile();
       const credentials = JSON.parse(credentialsData);
       const refreshToken = credentials.claudeAiOauth?.refreshToken;
-      
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
 
       const refreshData = {
         grant_type: 'refresh_token',
@@ -456,6 +454,10 @@ class ClaudeRequest {
         }
       });
     }
+  }
+
+  async refreshTokenWithClaudeCodeCli() {
+    throw new Error('CLI token refresh not implemented');
   }
 }
 

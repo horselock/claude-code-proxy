@@ -82,6 +82,7 @@ Most likely thing to go wrong is not being able to find the credentials, either 
 - Make sure your wsl default is Ubuntu (the default distro that comes with wsl)
 - If all else fails, go to wsl, `cat ~/.claude/.credentials.json`, copy out the access token (send a message in Claude Code first to make sure it's not expired), and put it in the authentication header. In ST this is the Proxy "password". 
   - If that's one too steps, you can go to util folder, enter wsl in the address bar, and run `claude-bearer.js` - that'll make sure it's not expired, and you'll get the token delivered to you. You don't have to copy "Bearer"
+- If you tend to leave Claude Code open for hours, you may find yourself logged out - just log out and back in again.
 
 ## What This Does
 - Adds headers (Authorization plus a couple specified in config.txt) to trick the endpoint into thinking the request is coming from a real Claude Code application.
