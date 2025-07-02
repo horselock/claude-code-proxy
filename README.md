@@ -1,7 +1,7 @@
 # claude-code-proxy
 ## About
 
-Mostly vibe coded, don't @ me
+Mostly vibe coded, my node skills suck ass, don't @ me (about code elegance at least, I'm open to suggestions and bug reports)
 
 Basically we can borrow Claude Code subscription authentication to make normal API calls at will, using claude.ai limit rather than API prices.
 
