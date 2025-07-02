@@ -1,6 +1,5 @@
 # claude-code-proxy
 ## About
-### Token refresh broke right now, just open claude code if auth fails
 
 Mostly vibe coded, don't @ me
 
