@@ -26,6 +26,10 @@ class Logger {
     console.log('INFO:', ...args);
   }
 
+  static warn(...args) {
+    console.warn('WARN:', ...args);
+  }
+
   static error(...args) {
     console.error('ERROR:', ...args);
   }

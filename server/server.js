@@ -23,9 +23,9 @@ function loadConfig() {
     
     Logger.init(config);
     
-    console.log('Config loaded from config.txt');
+    Logger.info('Config loaded from config.txt');
   } catch (error) {
-    console.error('Failed to load config:', error.message);
+    Logger.error('Failed to load config:', error.message);
     process.exit(1);
   }
 }
@@ -59,7 +59,7 @@ async function handleRequest(req, res) {
   const clientIP = getClientIP(req);
   const { pathname } = url.parse(req.url);
   
-  console.log(`${req.method} ${pathname} from ${clientIP}`);
+  Logger.info(`${req.method} ${pathname} from ${clientIP}`);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -92,7 +92,7 @@ async function handleRequest(req, res) {
       
       await new ClaudeRequest(req).handleResponse(res, body, presetName);
     } catch (error) {
-      console.error('Request error:', error.message);
+      Logger.error('Request error:', error.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: error.message }));
     }
@@ -112,16 +112,16 @@ function startServer() {
   const host = config.host || 'localhost';
   
   server.listen(port, host, () => {
-    console.log(`claude-code-proxy server listening on ${host}:${port}`);
+    Logger.info(`claude-code-proxy server listening on ${host}:${port}`);
   });
   
   process.on('SIGTERM', () => {
-    console.log('Shutting down...');
+    Logger.info('Shutting down...');
     server.close(() => process.exit(0));
   });
   
   process.on('SIGINT', () => {
-    console.log('Shutting down...');
+    Logger.info('Shutting down...');
     server.close(() => process.exit(0));
   });
 }
