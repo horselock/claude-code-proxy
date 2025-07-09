@@ -19,7 +19,7 @@ Requires:
 - Only exact dated model names of Sonnet 4, 3.7, 3.6, and Haiku 3.5 are allowed. Opus 4 too with Max.
 - Understand your front end's caching, some FEs like ST disable by default, complex RP setups may consistently miss cache and increase costs
 
-### Alternate Docker steps
+### Docker startup
 1. `docker-compose up` (Windows must enter this from wsl, with docker open obviously)
 
 ## Beginner/Thorough Guide
