@@ -72,14 +72,14 @@ You're done!
 - Try loading up Pyrite, my jailbroken persona!
   - I've pre-loaded Pyrite on the server. Just set your url to `http://localhost:42069/v1/pyrite`! This is meant for people who JUST installed a front and and don't have a real setup yet - it's nice to be able to celebrate your victory with something working right away!
 - Read up on how SillyTavern handles caching: https://docs.sillytavern.app/administration/config-yaml/#claude-configuration
-  - It's off by default, turn it on with those configs. Choose depth 0 if you aren't sure.
-  - What all those warnings mean is that for cache to be use, everything up to a certain point has to be the exact same. ST has a lot of advanced features where it makes changes to the start of the context, ruining your savings. But for simpler use cases, it's fine. Set the context to 200K IMO - because as stuff falls out of context if you choose a lower number, that also 
+  - It's off by default, turn it on with those configs. Choose depth 0 if you aren't sure; this caches the most aggressively.
+  - What all those warnings mean is that for cache to be used, the convo history up to a certain point has to be the exact same. ST has a lot of advanced features where it makes changes to the start of the context, ruining your savings. But for simpler use cases, it's fine. Set the context to 200K IMO - as stuff falls out of context if you choose a lower number, that changes the convo start 
 
 ### Troubleshooting
 Most likely thing to go wrong is not being able to find the credentials, either due to permissions or location.
 - Ensure you installed node in wsl with nvm, if not, just redo it.
 - Make sure your wsl default is Ubuntu (the default distro that comes with wsl)
-- If all else fails, go to wsl, `cat ~/.claude/.credentials.json`, copy out the access token (send a message in Claude Code first to make sure it's not expired), and put it in the authentication header. In ST this is the Proxy "password". 
+- If all else fails, go to wsl, `cat ~/.claude/.credentials.json`, copy out the access token (after sending a message from Claude Code first to make sure it's not expired), and put it in the authentication header. In ST, this is the Proxy "password". 
   - If that's one too steps, you can go to util folder, enter wsl in the address bar, and run `claude-bearer.js` - that'll make sure it's not expired, and you'll get the token delivered to you. You don't have to copy "Bearer"
 - If you tend to leave Claude Code open for hours, you may find yourself logged out. This means the access token expired and this proxy renewed it, but  Claude Code just sits there upset that it's expired instead of just checking the file. Just close Claude Code, it'll be fine when you open it again.
 
