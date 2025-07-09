@@ -1,7 +1,7 @@
 # claude-code-proxy
 ## About
 
-Mostly vibe coded, my node skills suck ass, don't @ me (about code elegance at least, I'm open to suggestions and bug reports)
+Mostly vibe coded, my node skills suck ass, don't @ me (kidding, I'm open to suggestions and bug reports)
 
 Basically we can borrow Claude Code subscription authentication to make normal API calls at will, using claude.ai limit rather than API prices.
 
@@ -17,7 +17,7 @@ Requires:
 
 - NOT an OpenAI compatible proxy, uses Anthropic's schema 
 - Only exact dated model names of Sonnet 4, 3.7, 3.6, and Haiku 3.5 are allowed. Opus 4 too with Max.
-- Understand your front end's caching, some disabled by default, complex setups may have pitfalls.
+- Understand your front end's caching, some FEs like ST disable by default, complex RP setups may consistently miss cache and increase costs
 
 ### Alternate Docker steps
 1. `docker-compose up` (Windows must enter this from wsl, with docker open obviously)
