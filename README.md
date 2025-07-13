@@ -9,6 +9,8 @@ There seems to be no safety injection and it gives us full control of the entire
 
 Obviously this is probably not super cool in terms of ToS. But I'm not worried, historically they don't ban web subscribers unless there's VPN/location/sus email/payment/ shenanigans (as opposed to API which does get got occasionally).
 
+NOTE this assumes you installed Claude Code in WSL on windows. They've made it installable in regular Windows. I guess I'll add support for that eventually but not available yet. I'll happily take a PR =).
+
 ## Quick Start
 Requires: 
 - nvm, node (installed with nvm), Claude Code, logged in with "Claude account with subscription"
