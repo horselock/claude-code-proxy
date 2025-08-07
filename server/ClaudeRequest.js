@@ -219,8 +219,6 @@ class ClaudeRequest {
   processRequestBody(body, presetName = null) {
     if (!body) return body;
 
-    body = this.stripTtlFromCacheControl(body);
-
     const systemPrompt = {
       type: 'text',
       text: 'You are Claude Code, Anthropic\'s official CLI for Claude.'
@@ -230,7 +228,7 @@ class ClaudeRequest {
       if (Array.isArray(body.system)) {
         body.system.unshift(systemPrompt);
       } else {
-        throw new Error('system field must be an array');
+        body.system = [systemPrompt, body.system];
       }
     } else {
       body.system = [systemPrompt];
@@ -239,6 +237,8 @@ class ClaudeRequest {
     if (presetName) {
       this.applyPreset(body, presetName);
     }
+
+    body = this.stripTtlFromCacheControl(body);
 
     return body;
   }
