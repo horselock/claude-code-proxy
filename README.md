@@ -7,7 +7,7 @@ Basically we can borrow Claude Code subscription authentication to make normal A
 
 There seems to be no safety injection and it gives us full control of the entire input, minus a tiny required sentence about being Claude Code in the system prompt (check What This Does section)
 
-Obviously this is probably not super cool in terms of ToS. But I'm not worried, historically they don't ban web subscribers unless there's VPN/location/sus email/payment/ shenanigans (as opposed to API which does get got occasionally).
+Obviously this is probably not super cool in terms of ToS. But I'm not worried, historically they don't ban web subscribers unless there's VPN/location/sus email/payment shenanigans (as opposed to API which does get got occasionally).
 
 NOTE: this assumes you installed Claude Code in WSL on windows. They've made it installable in regular Windows, but it's still buggy. I guess I'll add support for that eventually, but it's not available yet. I'll happily take a PR =).
 
@@ -27,7 +27,7 @@ Requires:
 ## Beginner/Thorough Guide
 As you can see by the Quick Start, like 95% of the setup is making sure you have Claude Code and your local front end are set up right. This utility's setup by itself is pretty much "run the server and point your front end at it." 
 
-This guide assumes windows (untested on Linux/Mac but should work fine, and if you're on Linux you probably don't need my help), and no wsl/nvm/node already installed. Just skip any sections you already have done.
+This guide assumes windows (untested on Linux but should work fine, there's a section regarding mac at bottom), and no wsl/nvm/node already installed. Just skip any sections you already have done.
 
 ### Install Claude Code 
 
@@ -89,6 +89,16 @@ Most likely thing to go wrong is not being able to find the credentials, either 
 - Adds headers (Authorization plus a couple specified in config.txt) to trick the endpoint into thinking the request is coming from a real Claude Code application.
 - Remove "ttl" key from any "cache_control" objects, since endpoint does not allow it
 - The first section of the system prompt must be "You are Claude Code, Anthropic's official CLI for Claude." or the request will not be accepted by Anthropic (specifically/technically, it must be the first item of the "system" array's "text" content). I am adding this, but this is just FYI so you know it's there and that you have to deal with it.
+
+## Mac
+A user had this to say:
+Finally got around to trying this. Posting this in case it helps any other Mac users.
+On my Macbook, there is no ~/.claude/credentials.json file for the server to parse. On my Mac, I found the token was securely stored in the Keychain Access app, not insecurely as a plain text file! So:
+I opened Keychain Access and searched for "Claude" which revealed the "Claude Code-credentials" entry
+Double click to open the entry > click "Show password" to reveal the token string (Authenticate with your password if asked)
+Copy the text of the token (which is the json content needed)
+Using your text editor of choice, create the file ~/.claude/credentials.json and paste the token text in and save
+Now when you access the proxy, it can parse the ~/.claude/credentials.json file and extract what it needs to spoof the bearer token to grant access to Claude nirvana!
 
 ## Todo
 - Implement intelligent caching to deal with SillyTavern features
