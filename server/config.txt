@@ -1,4 +1,4 @@
 port=42069
 host=0.0.0.0
 log_level=INFO  # TRACE, DEBUG, INFO, WARN, ERROR
-filter_sampling_params=true  # Remove top_p=1.0 and prefer temperature over top_p for Sonnet 4.5 compatibility
+filter_sampling_params=false  # Set to true to ensure only one sampling parameter is sent (required for Sonnet 4.5 compatibility). Removes default values (1.0) and prefers temperature over top_p when both are non-default.

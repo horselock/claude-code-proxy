@@ -36,7 +36,7 @@ const loadConfig = () => {
 };
 
 const CONFIG = loadConfig();
-const FILTER_SAMPLING_PARAMS = CONFIG.filter_sampling_params !== false; // Default to true
+const FILTER_SAMPLING_PARAMS = CONFIG.filter_sampling_params === true; // Default to false
 
 class ClaudeRequest {
   static cachedToken = null;
@@ -97,20 +97,42 @@ class ClaudeRequest {
     const hasTemperature = body.temperature !== undefined;
     const hasTopP = body.top_p !== undefined;
 
-    // Remove top_p if it's 1.0 (default/non-restrictive value)
-    if (hasTopP && body.top_p === 1.0) {
-      delete body.top_p;
-      Logger.debug('Removed top_p=1.0 from request (default value)');
-      return body;
-    }
+    // If both are present, we need to keep only one
+    if (hasTemperature && hasTopP) {
+      const tempIsDefault = body.temperature === 1.0;
+      const topPIsDefault = body.top_p === 1.0;
 
-    // If both temperature and top_p are non-default, prefer temperature
-    // Default for both is 1.0
-    if (hasTemperature && hasTopP && body.temperature !== 1.0 && body.top_p !== 1.0) {
-      const topPValue = body.top_p;
+      // If both are default, remove top_p (arbitrary choice)
+      if (tempIsDefault && topPIsDefault) {
+        delete body.top_p;
+        Logger.debug('Removed top_p=1.0 from request (both at default, keeping temperature)');
+      }
+      // If only top_p is default, remove it
+      else if (topPIsDefault) {
+        delete body.top_p;
+        Logger.debug(`Removed top_p=1.0 from request (keeping temperature=${body.temperature})`);
+      }
+      // If only temperature is default, remove it and keep top_p
+      else if (tempIsDefault) {
+        delete body.temperature;
+        Logger.debug(`Removed temperature=1.0 from request (keeping top_p=${body.top_p})`);
+      }
+      // If both are non-default, prefer temperature over top_p
+      else {
+        const topPValue = body.top_p;
+        delete body.top_p;
+        Logger.debug(`Removed top_p=${topPValue} from request (preferring temperature=${body.temperature})`);
+      }
+    }
+    // If only top_p is present and it's default, remove it
+    else if (hasTopP && body.top_p === 1.0) {
       delete body.top_p;
-      Logger.debug(`Removed top_p=${topPValue} from request (preferring temperature=${body.temperature})`);
-      return body;
+      Logger.debug('Removed top_p=1.0 from request (default value, no temperature specified)');
+    }
+    // If only temperature is present and it's default, remove it
+    else if (hasTemperature && body.temperature === 1.0) {
+      delete body.temperature;
+      Logger.debug('Removed temperature=1.0 from request (default value, no top_p specified)');
     }
 
     return body;
