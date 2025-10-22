@@ -1,3 +1,4 @@
 port=42069
 host=0.0.0.0
 log_level=INFO  # TRACE, DEBUG, INFO, WARN, ERROR
+filter_sampling_params=true  # Remove top_p=1.0 and prefer temperature over top_p for Sonnet 4.5 compatibility
