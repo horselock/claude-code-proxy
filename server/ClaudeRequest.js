@@ -8,6 +8,36 @@ const Logger = require('./Logger');
 const STRIP_TTL = true;
 const TOKEN_REFRESH_METHOD = 'OAUTH'; // 'OAUTH' or 'CLAUDE_CODE_CLI'
 
+// Load configuration
+const loadConfig = () => {
+  try {
+    const configPath = path.join(__dirname, 'config.txt');
+    const configData = fs.readFileSync(configPath, 'utf8');
+    const config = {};
+
+    configData.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+
+      const commentIndex = trimmed.indexOf('#');
+      const cleanLine = commentIndex !== -1 ? trimmed.substring(0, commentIndex).trim() : trimmed;
+
+      const [key, value] = cleanLine.split('=').map(s => s.trim());
+      if (key && value !== undefined) {
+        config[key] = value === 'true' ? true : value === 'false' ? false : value;
+      }
+    });
+
+    return config;
+  } catch (error) {
+    Logger.warn(`Failed to load config: ${error.message}`);
+    return {};
+  }
+};
+
+const CONFIG = loadConfig();
+const FILTER_SAMPLING_PARAMS = CONFIG.filter_sampling_params === true; // Default to false
+
 class ClaudeRequest {
   static cachedToken = null;
   static presetCache = new Map();
@@ -34,7 +64,7 @@ class ClaudeRequest {
 
     const processContentArray = (contentArray) => {
       if (!Array.isArray(contentArray)) return;
-      
+
       contentArray.forEach(item => {
         if (item && typeof item === 'object' && item.cache_control) {
           if (item.cache_control.ttl) {
@@ -55,6 +85,54 @@ class ClaudeRequest {
           processContentArray(message.content);
         }
       });
+    }
+
+    return body;
+  }
+
+  filterSamplingParams(body) {
+    if (!FILTER_SAMPLING_PARAMS) return body;
+    if (!body || typeof body !== 'object') return body;
+
+    const hasTemperature = body.temperature !== undefined;
+    const hasTopP = body.top_p !== undefined;
+
+    // If both are present, we need to keep only one
+    if (hasTemperature && hasTopP) {
+      const tempIsDefault = body.temperature === 1.0;
+      const topPIsDefault = body.top_p === 1.0;
+
+      // If both are default, remove top_p (arbitrary choice)
+      if (tempIsDefault && topPIsDefault) {
+        delete body.top_p;
+        Logger.debug('Removed top_p=1.0 from request (both at default, keeping temperature)');
+      }
+      // If only top_p is default, remove it
+      else if (topPIsDefault) {
+        delete body.top_p;
+        Logger.debug(`Removed top_p=1.0 from request (keeping temperature=${body.temperature})`);
+      }
+      // If only temperature is default, remove it and keep top_p
+      else if (tempIsDefault) {
+        delete body.temperature;
+        Logger.debug(`Removed temperature=1.0 from request (keeping top_p=${body.top_p})`);
+      }
+      // If both are non-default, prefer temperature over top_p
+      else {
+        const topPValue = body.top_p;
+        delete body.top_p;
+        Logger.debug(`Removed top_p=${topPValue} from request (preferring temperature=${body.temperature})`);
+      }
+    }
+    // If only top_p is present and it's default, remove it
+    else if (hasTopP && body.top_p === 1.0) {
+      delete body.top_p;
+      Logger.debug('Removed top_p=1.0 from request (default value, no temperature specified)');
+    }
+    // If only temperature is present and it's default, remove it
+    else if (hasTemperature && body.temperature === 1.0) {
+      delete body.temperature;
+      Logger.debug('Removed temperature=1.0 from request (default value, no top_p specified)');
     }
 
     return body;
@@ -239,6 +317,7 @@ class ClaudeRequest {
     }
 
     body = this.stripTtlFromCacheControl(body);
+    body = this.filterSamplingParams(body);
 
     return body;
   }

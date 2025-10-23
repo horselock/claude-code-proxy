@@ -89,6 +89,7 @@ Most likely thing to go wrong is not being able to find the credentials, either 
 - Adds headers (Authorization plus a couple specified in config.txt) to trick the endpoint into thinking the request is coming from a real Claude Code application.
 - Remove "ttl" key from any "cache_control" objects, since endpoint does not allow it
 - The first section of the system prompt must be "You are Claude Code, Anthropic's official CLI for Claude." or the request will not be accepted by Anthropic (specifically/technically, it must be the first item of the "system" array's "text" content). I am adding this, but this is just FYI so you know it's there and that you have to deal with it.
+- Optionally filter sampling parameters to avoid conflicts with Sonnet 4.5. Set `filter_sampling_params=true` in `server/config.txt` to enable this feature, which ensures only one sampling parameter is sent to the API. When both `temperature` and `top_p` are specified, it removes whichever is at the default value (1.0), or prefers temperature if both are non-default (Sonnet 4.5 doesn't allow both parameters). Other models work fine with both parameters, so this defaults to off.
 
 ## Mac
 A user had this to say:
