@@ -125,7 +125,35 @@ You're done!
   - I've pre-loaded Pyrite on the server. Just set your url to `http://localhost:42069/v1/pyrite`! This is meant for people who JUST installed a front and and don't have a real setup yet - it's nice to be able to celebrate your victory with something working right away!
 - Read up on how SillyTavern handles caching: https://docs.sillytavern.app/administration/config-yaml/#claude-configuration
   - It's off by default, turn it on with those configs. Choose depth 0 if you aren't sure; this caches the most aggressively.
-  - What all those warnings mean is that for cache to be used, the convo history up to a certain point has to be the exact same. ST has a lot of advanced features where it makes changes to the start of the context, ruining your savings. But for simpler use cases, it's fine. Set the context to 200K IMO - as stuff falls out of context if you choose a lower number, that changes the convo start 
+  - What all those warnings mean is that for cache to be used, the convo history up to a certain point has to be the exact same. ST has a lot of advanced features where it makes changes to the start of the context, ruining your savings. But for simpler use cases, it's fine. Set the context to 200K IMO - as stuff falls out of context if you choose a lower number, that changes the convo start
+
+### TypingMind Setup
+
+Unlike SillyTavern, TypingMind requires the **full endpoint URL** including `/v1/messages`.
+
+1. In TypingMind, go to **Model** > **Add Custom Model**
+2. Set **AI Type** to `Claude (messages API)`
+3. Set **Endpoint URL** to `http://localhost:42069/v1/messages` (note: full path required)
+4. Set **Model ID** to a valid Claude model, e.g. `claude-opus-4-5-20250514` or `claude-sonnet-4-20250514`
+5. Set **Context Length** to `200000` (same for all Claude models)
+6. Leave **Authentication** set to `None`
+7. (Optional) Add a PHI instruction - see below
+8. Click **Test**, then **Add Model** when the test succeeds
+
+#### Adding PHI (Post History Instruction)
+
+PHI allows you to inject ephemeral instructions that appear after the last user message but aren't stored in conversation history. This is useful for reply rules, formatting preferences, or per-request instructions.
+
+1. Expand **Advanced** > **Custom Body Params**
+2. Click **Add Body Parameter**
+3. Set type to `string`, key to `phi`, and value to your instruction
+
+Example PHI value:
+```
+<replyRules>Always respond concisely. Use markdown formatting.</replyRules>
+```
+
+The proxy strips the `phi` field from the request and injects it as a user message after your last message. Claude sees it, but TypingMind doesn't store it in the conversation history.
 
 ### Troubleshooting
 
@@ -155,6 +183,7 @@ Most likely thing to go wrong is not being able to find the credentials, either 
 - Remove "ttl" key from any "cache_control" objects, since endpoint does not allow it
 - The first section of the system prompt must be "You are Claude Code, Anthropic's official CLI for Claude." or the request will not be accepted by Anthropic (specifically/technically, it must be the first item of the "system" array's "text" content). I am adding this, but this is just FYI so you know it's there and that you have to deal with it
 - Optionally filter sampling parameters to avoid conflicts with Sonnet 4.5. Set `filter_sampling_params=true` in `server/config.txt` to enable this feature, which ensures only one sampling parameter is sent to the API. When both `temperature` and `top_p` are specified, it removes whichever is at the default value (1.0), or prefers temperature if both are non-default (Sonnet 4.5 doesn't allow both parameters). Other models work fine with both parameters, so this defaults to off
+- **PHI (Post History Instruction)**: If the request body contains a `phi` field, it's injected as a user message after the last user message, then removed from the request. This allows clients like TypingMind to send ephemeral instructions without native PHI support
 
 ### Smart Host Binding
 - **Native execution**: Binds to `127.0.0.1` (secure, local-only)
