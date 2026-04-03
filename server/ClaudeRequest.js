@@ -73,6 +73,10 @@ class ClaudeRequest {
             delete item.cache_control.ttl;
             Logger.debug('Removed ttl from cache_control');
           }
+          if (item.cache_control.scope) {
+            delete item.cache_control.scope;
+            Logger.debug('Removed scope from cache_control');
+          }
         }
       });
     };
